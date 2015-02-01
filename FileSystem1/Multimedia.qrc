@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Multimedia/BackgroundApp.png</file>
+        <file>Multimedia/1366777.jpg</file>
+        <file>Multimedia/origame.png</file>
+    </qresource>
+</RCC>
