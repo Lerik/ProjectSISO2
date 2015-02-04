@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
     this->indexOfCommandLines = -1;
     this->nextEmptyCommandLine = 0;
     this->commandLines = new QString[this->limitCommandLines]();
+    this->allTextInserted = "";
 }
 
 MainWindow::~MainWindow()
@@ -75,68 +76,19 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
                 this->deleteKeyPressed();
             }
             else if(keyEvent->key() == this->leftKey){
-
-                if(this->cursorPosition == this->currentCommandLine.size()-1){
-                    QString newText = this->currentCommandLine.toStdString().substr(0, ui->textEdit->toPlainText().size()-2);
-                    newText.append("|");
-                    newText.append(this->currentCommandLine[this->currentCommandLine.size()-2]);
-
-                }
-
-                if(this->cursorPosition < this->currentCommandLine.size()-1){
-                    QString* splittedText = this->currentCommandLine.split("|");
-                    QString newText = splittedText[0].toStdString().substr(0, splittedText[0].size()-1);
-                    newText.append("|");
-                    newText.append(splittedText[0][splittedText[0].size()-1]);
-                }
-
-                return true;
+                this->leftKeyPressed();
             }
             else if(keyEvent->key() == this->rightKey){
-                return true;
+                this->rightKeyPressed();
             }
             else if(keyEvent->key() == this->upKey){
-                return true;
+                this->upKeyPressed();
             }
             else if(keyEvent->key() == this->downKey){
-                return true;
+                this->downKeyPressed();
             }
             else{
-                QChar pressedKey = QChar(keyEvent->key()).toLower();
-                QString charactersAllowed = "-_/*+.:";
-
-                if(pressedKey.isLetterOrNumber() || charactersAllowed.contains(pressedKey) || keyEvent->key()==this->spaceKey){
-
-                    QString newText;
-                    newText.append(this->allTextInserted);
-                    newText.append("\n[User]: ");
-
-                    if(this->currentCommandLine.isEmpty()){
-                        this->currentCommandLine.append(pressedKey);
-                        this->cursorPosition = 1;
-                        newText.append(this->currentCommandLine);
-                        newText.append("|");
-                    }
-                    else if(this->cursorPosition == 0){
-                        this->currentCommandLine.insert(0, pressedKey);
-                        this->cursorPosition = 1;
-                        newText.append(pressedKey);
-                        newText.append("|");
-                        newText.append(this->currentCommandLine.mid(1, this->currentCommandLine-1));
-                    }
-
-                    this->currentCommandLine.append(pressedKey);
-                    QString newText;
-                    newText.append(this->allTextInserted);
-                    newText.append("\n[User]: ");
-                    newText.append(this->currentCommandLine);
-                    newText.append("|");
-
-                    ui->textEdit->clear();
-                    ui->textEdit->insertPlainText(newText);
-                    this->cursorPosition++;
-
-                }
+                this->textKeyPressed(keyEvent);
             }
 
             return true;
@@ -147,27 +99,32 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 void MainWindow::enterKeyPressed()
 {
     this->saveCommandLine(this->currentCommandLine);
-    this->allTextInserted.append("\n[User]: ");
+    this->allTextInserted.append("[User]: ");
     this->allTextInserted.append(this->currentCommandLine);
+    this->allTextInserted.append("\n");
     this->currentCommandLine.clear();
     this->cursorPosition = 0;
     this->indexOfCommandLines = this->nextEmptyCommandLine-1;
 
     ui->textEdit->clear();
     ui->textEdit->insertPlainText(this->allTextInserted);
-    ui->textEdit->insertPlainText("\n[User]: |");
+    ui->textEdit->insertPlainText("[User]: |");
 }
 
 void MainWindow::deleteKeyPressed()
 {
     if(this->cursorPosition != 0){
         QString newText;
-        newText.append(this->allTextInserted);
-        newText.append("\n[User]: ");
+
+        if(this->allTextInserted.size()!=0)
+            newText.append(this->allTextInserted);
+
+        newText.append("[User]: ");
 
         if(this->currentCommandLine.size()==1){
             this->currentCommandLine = "";
             newText.append("|");
+            this->cursorPosition = 0;
         }
         else if(this->cursorPosition==1){
             this->currentCommandLine = this->currentCommandLine.mid(1, this->currentCommandLine.size()-1);
@@ -179,6 +136,7 @@ void MainWindow::deleteKeyPressed()
             this->currentCommandLine = this->currentCommandLine.mid(0, this->currentCommandLine.size()-1);
             newText.append(this->currentCommandLine);
             newText.append("|");
+            this->cursorPosition--;
         }
         else{
             QString newCommandLine = this->currentCommandLine.mid(0,this->cursorPosition-1);
@@ -187,28 +145,149 @@ void MainWindow::deleteKeyPressed()
             newText.append("|");
             newText.append(this->currentCommandLine.mid(this->cursorPosition, this->currentCommandLine.size()-1));
             this->currentCommandLine = newCommandLine;
+            this->cursorPosition--;
         }
 
         ui->textEdit->clear();
         ui->textEdit->insertPlainText(newText);
-        this->currentCommandLine = this->currentCommandLine.mid(0,this->currentCommandLine.size()-1);
-        this->counterLettersInLine--;
-        this->cursorPosition;
-        return true;
     }
 }
 
 void MainWindow::leftKeyPressed()
-{}
+{
+    if(this->cursorPosition != 0){
+
+        QString newText;
+
+        if(this->allTextInserted.size()!=0)
+            newText.append(this->allTextInserted);
+
+        newText.append("[User]: ");
+
+        if(this->cursorPosition == 1){
+            newText.append("|");
+            newText.append(this->currentCommandLine);
+            this->cursorPosition = 0;
+        }
+        else if(this->cursorPosition == this->currentCommandLine.size()){
+            newText.append(this->currentCommandLine.mid(0, this->currentCommandLine.size()-1));
+            newText.append("|");
+            newText.append(this->currentCommandLine[this->currentCommandLine.size()-1]);
+            this->cursorPosition--;
+        }
+        else{
+            newText.append(this->currentCommandLine.mid(0, this->cursorPosition-1));
+            newText.append("|");
+            newText.append(this->currentCommandLine.mid(this->cursorPosition-1, this->currentCommandLine.size()-(this->cursorPosition-1)));
+            this->cursorPosition--;
+        }
+
+        ui->textEdit->clear();
+        ui->textEdit->insertPlainText(newText);
+
+    }
+}
 
 void MainWindow::rightKeyPressed()
-{}
+{
+
+    if(this->cursorPosition != this->currentCommandLine.size()){
+
+        QString newText;
+
+        if(this->allTextInserted.size()!=0)
+            newText.append(this->allTextInserted);
+
+        newText.append("[User]: ");
+
+        if(this->cursorPosition == this->currentCommandLine.size()-1){
+            newText.append(this->currentCommandLine);
+            newText.append("|");
+            this->cursorPosition = this->currentCommandLine.size();
+        }
+        else if(this->cursorPosition == 0){
+            newText.append(this->currentCommandLine[0]);
+            newText.append("|");
+
+            if(this->currentCommandLine.size() > 1)
+                newText.append(this->currentCommandLine.mid(1, this->currentCommandLine.size()-1));
+
+            this->cursorPosition++;
+        }
+        else{
+            newText.append(this->currentCommandLine.mid(0, this->cursorPosition+1));
+            newText.append("|");
+
+            if((this->cursorPosition+1) != this->currentCommandLine.size())
+                newText.append(this->currentCommandLine.mid(this->cursorPosition+1, this->currentCommandLine.size()-(this->cursorPosition+1)));
+
+            this->cursorPosition++;
+        }
+
+        ui->textEdit->clear();
+        ui->textEdit->insertPlainText(newText);
+
+    }
+
+}
 
 void MainWindow::upKeyPressed()
 {}
 
 void MainWindow::downKeyPressed()
 {}
+
+void MainWindow::textKeyPressed(QKeyEvent *keyEvent)
+{
+    QChar pressedKey = QChar(keyEvent->key()).toLower();
+    QString charactersAllowed = "-_/*+.:";
+
+    if(pressedKey.isLetterOrNumber() || charactersAllowed.contains(pressedKey) || keyEvent->key()==this->spaceKey){
+
+        QString newText;
+
+        if(this->allTextInserted.size()!=0)
+            newText.append(this->allTextInserted);
+
+        newText.append("[User]: ");
+
+        if(this->currentCommandLine.isEmpty() || this->cursorPosition == this->currentCommandLine.size()){
+            this->currentCommandLine.append(pressedKey);
+
+            if(this->currentCommandLine.isEmpty())
+                this->cursorPosition = 1;
+            else
+                this->cursorPosition = this->currentCommandLine.size();
+
+            newText.append(this->currentCommandLine);
+            newText.append("|");
+        }
+        else if(this->cursorPosition == 0){
+            this->currentCommandLine.insert(0, pressedKey);
+            this->cursorPosition = 1;
+            newText.append(pressedKey);
+            newText.append("|");
+            newText.append(this->currentCommandLine.mid(1, this->currentCommandLine.size()-1));
+        }
+        else{
+            QString newCommandLine = this->currentCommandLine.mid(0, this->cursorPosition);
+            newCommandLine.append(pressedKey);
+            newCommandLine.append(this->currentCommandLine.mid(this->cursorPosition, this->currentCommandLine.size()-this->cursorPosition));
+
+            newText.append(this->currentCommandLine.mid(0, this->cursorPosition));
+            newText.append(pressedKey);
+            newText.append("|");
+            newText.append(this->currentCommandLine.mid(this->cursorPosition, this->currentCommandLine.size()-this->cursorPosition));
+
+            this->currentCommandLine = newCommandLine;
+            this->cursorPosition++;
+        }
+
+        ui->textEdit->clear();
+        ui->textEdit->insertPlainText(newText);
+
+    }
+}
 
 void MainWindow::saveCommandLine(QString commandLine)
 {

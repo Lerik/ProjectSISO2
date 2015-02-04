@@ -62,6 +62,7 @@ private:
     void rightKeyPressed();
     void upKeyPressed();
     void downKeyPressed();
+    void textKeyPressed(QKeyEvent *keyEvent);
 
     void saveCommandLine(QString commandLine);
     /* ------------------------------------------- */
